@@ -1,9 +1,7 @@
 import neopixel
 import machine
 import array, time
-from machine import Pin
 import rp2
-import uasyncio as asyncio
 
 #Configure the pins for LED readout
 led_red_pin = machine.ADC(0)  # analog input pin for LED 1
@@ -13,13 +11,15 @@ led_green_pin = machine.ADC(1)  # analog input pin for LED 2
 poti_pin = machine.ADC(2)
 
 # Define Variables
-SLEEPTIME = 0.1         # mSeconds refresh time
-BLINK_INTERVAL = 0.5    # mSeconds between yellow blinking
-LOADING_SPEED = 0.1     # mSeconds between white led transition
-MAX_LOADINGTIME = 30    # seconds to Alarm (blink yellow)
+SLEEPTIME = 0.1                 # mSeconds refresh time
+BLINK_INTERVAL = 0.5            # mSeconds between yellow blinking
+LOADING_SPEED = 0.1             # mSeconds between white led transition
+LOADING_LEDS_ON_AT_ONCE = 2     # Number of LEDs that are turned on simultaneously
+LOADING_STEP_WIDTH = 2          # Step width of the loading animation
+MAX_LOADINGTIME = 30            # seconds to Alarm (blink yellow)
 LED_ACTIVATION_VOLTAGE = 3.0  
-LED_MIN_BRIGHTNESS = 0.05   # Value between 0 and 1
-LED_MAX_BRIGHTNESS = 1.0    # Value between LED_MIN_BRIGHTNESS and 1
+LED_MIN_BRIGHTNESS = 0.05       # Value between 0 and 1
+LED_MAX_BRIGHTNESS = 1.0        # Value between LED_MIN_BRIGHTNESS and 1
 
 # Configure the number of WS2812 LEDs.
 NUM_LEDS = 3
@@ -165,12 +165,18 @@ class StateMachine:
             elif self.state == self.loading:
                 pixels_fill(YELLOW)
                 pixels_show()
-                for i in range(len(ar)):
-                    pixels_set(i, WHITE)
-                    pixels_show()
+                for i in range(0, NUM_LEDS, LOADING_STEP_WIDTH):
+                    # Calculate the range of LEDs to turn white
+                    start_index = max(i - LOADING_LEDS_ON_AT_ONCE + 1, 0)
+                    end_index = min(i + LOADING_STEP_WIDTH, NUM_LEDS)
+                    # Turn white the LEDs in the range
+                    for j in range(start_index, end_index):
+                        pixels_set(j, WHITE)
+                        pixels_show()
                     time.sleep(LOADING_SPEED)
-                    pixels_set(i, YELLOW)
-                    pixels_show()
+                    # Turn yellow the LEDs in the range
+                    for j in range(start_index, end_index):
+                        pixels_set(j, YELLOW)
                 time_last_loading = time.time()
             # LED_BLINK
             elif self.state == self.blink:
@@ -200,17 +206,6 @@ class StateMachine:
             self.transition(is_led_red_on, is_led_green_on, is_loading_time_exceeded)
             time.sleep(SLEEPTIME)
 
-async def taskSmLED():
-    StateMachine().run()
-
-async def taskTomasKram():
-    global brightness
-    #while True:
-    #    brightness = poti_pin.read_u16() * 1.0 / 65535.0
-
-loop = asyncio.get_event_loop()
-loop.create_task(taskSmLED())
-loop.create_task(taskTomasKram())
-loop.run_forever()
+StateMachine().run()
 
 #################### Lenny was here end ##########################
