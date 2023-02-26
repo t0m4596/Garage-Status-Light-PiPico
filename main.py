@@ -2,6 +2,7 @@ import neopixel
 import machine
 import array, time
 import rp2
+from machine import Pin
 
 #Configure the pins for LED readout
 led_red_pin = machine.ADC(0)  # analog input pin for LED 1
@@ -11,18 +12,18 @@ led_green_pin = machine.ADC(1)  # analog input pin for LED 2
 poti_pin = machine.ADC(2)
 
 # Define Variables
-SLEEPTIME = 0.1                 # mSeconds refresh time
+SLEEPTIME = 0.2                 # mSeconds refresh time
 BLINK_INTERVAL = 0.5            # mSeconds between yellow blinking
-LOADING_SPEED = 0.1             # mSeconds between white led transition
-LOADING_LEDS_ON_AT_ONCE = 2     # Number of LEDs that are turned on simultaneously
-LOADING_STEP_WIDTH = 2          # Step width of the loading animation
+LOADING_SPEED = 0.05             # mSeconds between white led transition
+LOADING_LEDS_ON_AT_ONCE = 2    # Number of LEDs that are turned on simultaneously
+LOADING_STEP_WIDTH = 1         # Step width of the loading animation
 MAX_LOADINGTIME = 30            # seconds to Alarm (blink yellow)
 LED_ACTIVATION_VOLTAGE = 3.0  
-LED_MIN_BRIGHTNESS = 0.05       # Value between 0 and 1
+LED_MIN_BRIGHTNESS = 0.1      # Value between 0 and 1
 LED_MAX_BRIGHTNESS = 1.0        # Value between LED_MIN_BRIGHTNESS and 1
 
 # Configure the number of WS2812 LEDs.
-NUM_LEDS = 3
+NUM_LEDS = 48
 PIN_NUM = 22
 brightness = 0.1
 
@@ -163,20 +164,16 @@ class StateMachine:
                 pixels_show()
             # LED_LOADING
             elif self.state == self.loading:
-                pixels_fill(YELLOW)
-                pixels_show()
                 for i in range(0, NUM_LEDS, LOADING_STEP_WIDTH):
                     # Calculate the range of LEDs to turn white
                     start_index = max(i - LOADING_LEDS_ON_AT_ONCE + 1, 0)
                     end_index = min(i + LOADING_STEP_WIDTH, NUM_LEDS)
                     # Turn white the LEDs in the range
+                    pixels_fill(YELLOW)
                     for j in range(start_index, end_index):
                         pixels_set(j, WHITE)
                         pixels_show()
                     time.sleep(LOADING_SPEED)
-                    # Turn yellow the LEDs in the range
-                    for j in range(start_index, end_index):
-                        pixels_set(j, YELLOW)
                 time_last_loading = time.time()
             # LED_BLINK
             elif self.state == self.blink:
