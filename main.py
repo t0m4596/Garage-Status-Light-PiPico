@@ -18,7 +18,7 @@ LOADING_SPEED = 0.05             # mSeconds between white led transition
 LOADING_LEDS_ON_AT_ONCE = 2    # Number of LEDs that are turned on simultaneously
 LOADING_STEP_WIDTH = 1         # Step width of the loading animation
 MAX_LOADINGTIME = 30            # seconds to Alarm (blink yellow)
-LED_ACTIVATION_VOLTAGE = 3.0  
+LED_ACTIVATION_VOLTAGE = 1.5  
 LED_MIN_BRIGHTNESS = 0.1      # Value between 0 and 1
 LED_MAX_BRIGHTNESS = 1.0        # Value between LED_MIN_BRIGHTNESS and 1
 
