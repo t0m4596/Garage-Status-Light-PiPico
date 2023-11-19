@@ -11,16 +11,17 @@ led_green_pin = machine.ADC(1)  # analog input pin for LED 2
 #Configure the pins for brightness POTI
 poti_pin = machine.ADC(2)
 
-# Define Variables
+# Define constants
 SLEEPTIME = 0.2                 # mSeconds refresh time
 BLINK_INTERVAL = 0.5            # mSeconds between yellow blinking
-LOADING_SPEED = 0.05             # mSeconds between white led transition
-LOADING_LEDS_ON_AT_ONCE = 2    # Number of LEDs that are turned on simultaneously
-LOADING_STEP_WIDTH = 1         # Step width of the loading animation
+LOADING_SPEED = 0.05            # mSeconds between white led transition
+LOADING_LEDS_ON_AT_ONCE = 2     # Number of LEDs that are turned on simultaneously
+LOADING_STEP_WIDTH = 1          # Step width of the loading animation
 MAX_LOADINGTIME = 30            # seconds to Alarm (blink yellow)
 LED_ACTIVATION_VOLTAGE = 1.5  
-LED_MIN_BRIGHTNESS = 0.1      # Value between 0 and 1
+LED_MIN_BRIGHTNESS = 0.1        # Value between 0 and 1
 LED_MAX_BRIGHTNESS = 1.0        # Value between LED_MIN_BRIGHTNESS and 1
+DEBOUNCE_TIME_MS = 0.5          # Debounce time for the signals at the LEDs
 
 # Configure the number of WS2812 LEDs.
 NUM_LEDS = 48
@@ -83,6 +84,27 @@ COLORS = (BLACK, RED, YELLOW, GREEN, CYAN, BLUE, PURPLE, WHITE)
 
 #################### Lenny was here start ##########################
 
+class Debouncer:
+    """A class for debouncing signals to filter out short spikes.
+
+    This class provides a debounce mechanism to ensure that changes in a signal are only
+    considered valid if they persist for a specified debounce time.
+    """
+    def __init__(self, debounce_time):
+        self.debounce_time = debounce_time
+        self.last_change_time = time.time()
+
+    def debounce(self, value):
+        current_time = time.time()
+
+        if value != self.last_value:
+            self.last_change_time = current_time
+
+        if current_time - self.last_change_time > self.debounce_time:
+            self.last_value = value
+            return value
+        else:
+            return self.last_value
 
 # Define the states
 class State:
@@ -98,6 +120,8 @@ class StateMachine:
         self.blink = State('BLINK_LED_YELLOW')
         self.green = State('LED_GREEN')
         self.state = self.yellow
+        self.red_led_debouncer = Debouncer(DEBOUNCE_TIME_MS)
+        self.green_led_debouncer = Debouncer(DEBOUNCE_TIME_MS)
         
     def transition(self, is_red_on, is_green_on, is_loading_time_exceeded):
         # LED_YELLOW
@@ -197,9 +221,10 @@ class StateMachine:
 
             print("loading_time: ", time_last_loading - time_first_loading)
             
-            is_led_red_on = led_red_voltage > LED_ACTIVATION_VOLTAGE
-            is_led_green_on = led_green_voltage > LED_ACTIVATION_VOLTAGE
+            is_led_red_on = self.red_led_debouncer.debounce(led_red_voltage > LED_ACTIVATION_VOLTAGE)
+            is_led_green_on = self.green_led_debouncer.debounce(led_green_voltage > LED_ACTIVATION_VOLTAGE)
             is_loading_time_exceeded = (time_last_loading - time_first_loading) > MAX_LOADINGTIME
+
             self.transition(is_led_red_on, is_led_green_on, is_loading_time_exceeded)
             time.sleep(SLEEPTIME)
 
