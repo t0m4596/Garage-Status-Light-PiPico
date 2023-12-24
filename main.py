@@ -21,7 +21,7 @@ MAX_LOADINGTIME = 30            # seconds to Alarm (blink yellow)
 LED_ACTIVATION_VOLTAGE = 1.5  
 LED_MIN_BRIGHTNESS = 0.1        # Value between 0 and 1
 LED_MAX_BRIGHTNESS = 1.0        # Value between LED_MIN_BRIGHTNESS and 1
-DEBOUNCE_TIME_MS = 0.5          # Debounce time for the signals at the LEDs
+DEBOUNCE_TIME_SECONDS = 0.2          # Debounce time for the signals at the LEDs
 
 # Configure the number of WS2812 LEDs.
 NUM_LEDS = 48
@@ -90,17 +90,20 @@ class Debouncer:
     This class provides a debounce mechanism to ensure that changes in a signal are only
     considered valid if they persist for a specified debounce time.
     """
-    def __init__(self, debounce_time):
-        self.debounce_time = debounce_time
+    def __init__(self, debounce_seconds):
+        self.debounce_time = debounce_seconds
         self.last_change_time = time.time()
+        self.last_value = False
 
     def debounce(self, value):
         current_time = time.time()
 
-        if value != self.last_value:
-            self.last_change_time = current_time
+        # if value != self.last_value:
+        #     self.last_change_time = current_time
+
 
         if current_time - self.last_change_time > self.debounce_time:
+            self.last_change_time = current_time
             self.last_value = value
             return value
         else:
@@ -120,8 +123,8 @@ class StateMachine:
         self.blink = State('BLINK_LED_YELLOW')
         self.green = State('LED_GREEN')
         self.state = self.yellow
-        self.red_led_debouncer = Debouncer(DEBOUNCE_TIME_MS)
-        self.green_led_debouncer = Debouncer(DEBOUNCE_TIME_MS)
+        self.red_led_debouncer = Debouncer(DEBOUNCE_TIME_SECONDS)
+        self.green_led_debouncer = Debouncer(DEBOUNCE_TIME_SECONDS)
         
     def transition(self, is_red_on, is_green_on, is_loading_time_exceeded):
         # LED_YELLOW
